@@ -1,35 +1,95 @@
----
-layout: null
-title: Juice Boost Home
----
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<text y='.9em' font-size='90'>🕹️</text>
+</svg>">
+
   <meta charset="UTF-8" />
-  <title>{{ page.title }}</title>
+  <title>Juice Boost – Home | Game Dev With Rob</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- RaRa theme CSS -->
+  <link rel="stylesheet" href="assets/rara-games-devtools.css" />
 </head>
 <body>
-  <h1>{{ page.title }}</h1>
 
-  <p>Sessions / pages in this module:</p>
+  <!-- Top site header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-main">
+          <div class="brand-dot"></div>
+          <span>Game Dev With Rob 🕹️</span>
+        </div>
+        <div class="brand-course">
+          Juice Boost
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <ul>
-    {%- assign sorted_pages = site.pages | sort: "url" -%}
-    {%- for p in sorted_pages -%}
-      {%- comment %}
-        Skip:
-        - this home page itself
-        - 404 page (if you have one)
-      {% endcomment -%}
-      {%- if p.url != page.url and p.url != "/404.html" -%}
-        <li>
-          <a href="{{ p.url | relative_url }}">
-            {{ p.title | default: p.name | default: p.url }}
-          </a>
-        </li>
-      {%- endif -%}
-    {%- endfor -%}
-  </ul>
+  <main class="lecture-page">
+
+    <!-- SPLASH WELCOME -->
+    <header class="lecture-header">
+      <h1>Welcome! Let's Code Some Cool Things</h1>
+
+      <div class="lecture-meta-line">
+        Juice Boost – Practical Game Juice Techniques for Unity
+      </div>
+
+      <p class="lecture-aim">
+        This homepage links to every session, lab, and slide deck in the Juice Boost series. 
+        Each page teaches a micro-technique you can drop directly into a Unity prototype.
+      </p>
+    </header>
+
+    <hr />
+
+    <!-- PAGE LIST -->
+    <section class="lecture-section">
+      <h2>Module Pages</h2>
+
+      <p>Just add or remove entries in the list below. No other editing needed.</p>
+
+      <div class="resource-links" style="margin-top: 1.5rem;">
+
+        <!-- EASY-TO-EDIT LINKS — JUST COPY A LINE AND UPDATE THE TEXT + URL -->
+        <a class="resource-pill" href="ExpressiveMotion-Part1.html">
+          Expressive Motion – Squash & Stretch (Part 1)
+        </a>
+
+        <a class="resource-pill" href="ExpressiveMotion-Part2.html">
+          Expressive Motion – Squash & Stretch (Part 2)
+        </a>
+
+        <a class="resource-pill" href="SomeFuturePage.html">
+          Your New Page Title Here
+        </a>
+
+      </div>
+    </section>
+
+    <hr />
+
+    <!-- OPTIONAL DOWNLOADS -->
+    <section class="lecture-section">
+      <h2>Downloads</h2>
+
+      <div class="resource-links">
+        <a class="resource-pill" href="https://github.com/robblofield/Juice-Boost/tree/main/Lab%20Notes">
+          Lab Notes Folder
+        </a>
+
+        <a class="resource-pill" href="https://github.com/robblofield/Juice-Boost/blob/main/Teaching_CorePlayer_3D.unitypackage">
+          Teaching_CorePlayer_3D Unity Package
+        </a>
+      </div>
+    </section>
+
+  </main>
+
 </body>
 </html>
