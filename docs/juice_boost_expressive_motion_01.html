@@ -7,7 +7,7 @@
 </svg>">
 
   <meta charset="UTF-8" />
-  <title>Week 09 – Space Shooter Pt. 1 | Game Dev With Rob</title>
+  <title>Juice Boost - Expressive Motion: Procedural Squash & Stretch for Characters - Part 1 | Game Dev With Rob</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- RaRa theme CSS -->
@@ -30,7 +30,7 @@
         </div>
         <div class="brand-course">
           <!-- MODULE CODE + TITLE HERE -->
-          GDD422 – Prototypes &amp; Programming Principles
+          Juice Boost
         </div>
       </div>
     </div>
@@ -40,23 +40,24 @@
 
     <!-- LECTURE HEADER (now static, not sticky) -->
     <header class="lecture-header">
-      <h1><!-- LECTURE TITLE HERE -->Space Shooter Pt. 1</h1>
+      <h1><!-- LECTURE TITLE HERE -->Expressive Motion: Procedural Squash & Stretch for Characters - Part 1</h1>
 
       <div class="lecture-meta-line">
         <!-- MODULE TITLE + WEEK INFO HERE -->
-        GDD422 – Week 09
+        Juice Boost
       </div>
 
       <div class="tags">
         <!-- TAGS / TOPICS HERE -->
         <span class="tag">C#</span>
         <span class="tag">Lab</span>
-        <span class="tag">2D Arcade</span>
+        <span class="tag">Game Juice</span>
+        <span class="tag">3D</span>
       </div>
 
       <p class="lecture-aim">
         <!-- AIM TEXT HERE -->
-        Aim: Start building a fun and frantic arcade-style shmup in Unity C#.
+        Aim: Today we will implement procedural squash & stretch to add expressive motion to a character—no animation clips needed.
       </p>
     </header>
 
@@ -77,7 +78,7 @@
 
       <iframe
         id="gammaFrame"
-        src="https://gamma.app/embed/e842znwz41ztvgw"
+        src="https://gamma.app/embed/37qhwa8aw9nfnnv"
         loading="lazy"
         allowfullscreen
         allow="fullscreen"
@@ -126,7 +127,7 @@
       <!-- CODE BLOCK 1 -->
       <article class="code-example" id="code-block-1">
         <div class="code-header">
-          <div class="code-title">Code Block 1 – <!-- Short description here -->Player Movement</div>
+          <div class="code-title">PlayerBouncy.cs – <!-- Short description here -->PlayerBouncy.cs</div>
           <div class="code-ref">Appendix #01</div>
         </div>
 <details>
@@ -134,667 +135,76 @@
         <pre class="language-csharp"><code class="language-csharp">
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class PlayerBouncy : MonoBehaviour
 {
-    [Header("Movement")]
-    public float moveSpeed = 5f;
+    [Header("Idle Stretch (Breathing Effect)")]
+    public float idleBounceSpeed = 0.5f;
+    public float idleBounceHeight = 0.02f;
+
+    [Header("Moving Shuffle (Cartoon Hop Side-to-Side)")]
+    public float moveShuffleSpeed = 6f;
+    public float moveShuffleAngle = 10f;
+    public float moveBounceHeight = 0.05f;
+
+    [Header("References")]
+    public PlayerMovement playerMovement;
+
+    private Vector3 originalScale;
+
+    void Start()
+    {
+        originalScale = transform.localScale;
+    }
 
     void Update()
     {
-        HandleMovement();
-    }
+        bool isMoving = playerMovement.CurrentMoveInput.sqrMagnitude > 0.01f;
 
-    private void HandleMovement()
-    {
-        // Read input axes
-        float moveX = Input.GetAxis("Horizontal");
-        float moveY = Input.GetAxis("Vertical");
+        if (!isMoving)
+        {
+            // IDLE: Breathing stretch, keep facing last direction
+            float bounce = Mathf.Sin(Time.time * idleBounceSpeed) * idleBounceHeight;
+            transform.localScale = new Vector3(
+                originalScale.x,
+                originalScale.y + bounce,
+                originalScale.z
+            );
 
-        // 2D movement vector
-        Vector3 movement = new Vector3(moveX, moveY, 0f) * moveSpeed * Time.deltaTime;
+            // Reset only side-to-side tilt, keep current Y rotation
+            transform.rotation = Quaternion.Euler(
+                0,
+                transform.rotation.eulerAngles.y,
+                0
+            );
+        }
+        else
+        {
+            // MOVING: Cartoon shuffle + bounce
+            float shuffle = Mathf.Sin(Time.time * moveShuffleSpeed) * moveShuffleAngle;
+            float bounce = Mathf.Sin(Time.time * moveShuffleSpeed) * moveBounceHeight;
 
-        // Proposed new position
-        Vector3 newPos = transform.position + movement;
+            transform.localScale = new Vector3(
+                originalScale.x,
+                originalScale.y + bounce,
+                originalScale.z
+            );
 
-        // Apply
-        transform.position = newPos;
+            transform.rotation = Quaternion.Euler(
+                0,
+                transform.rotation.eulerAngles.y,
+                shuffle
+            );
+        }
     }
 }
+
 
         </code></pre>
   </details>
 
         <blockquote>
           <!-- NOTES ABOUT THIS CODE BLOCK -->
-          Make sure you’re adding the movement onto the current position and using <code>deltaTime</code>, otherwise the player will move inconsistently or far too quickly.
-        </blockquote>
-      </article>
-  
-      <!-- CODE BLOCK 2 -->
-      <article class="code-example" id="code-block-2">
-        <div class="code-header">
-          <div class="code-title">Code Block 2 – <!-- Short description here -->Screen Boundaries.</div>
-          <div class="code-ref">Appendix #02</div>
-        </div>
-<details>
-<summary>💡 Hints (click to expand)</summary>
-        <pre class="language-csharp"><code class="language-csharp">
-using UnityEngine;
-
-public class Player : MonoBehaviour
-{
-    [Header("Movement")] // Use can headers in you variables to make them pretty in the inspector
-    public float moveSpeed = 8f;
-
-    [Header("Screen Bounds")]
-    public Camera cam; //The camera in our scene
-    public float horizontalPadding = 0.55f; // How close can we get to the sides
-    public float verticalPadding = 0.55f; // How close can we get to the sides
-    private float minX, maxX; //Where we store the world edge x values
-    private float minY, maxY; //Where we store the world edge y values
-
-    void Start()
-    {
-        // Assign the main camera if not set
-        if (cam == null)
-        {
-            cam = Camera.main;
-
-            if (cam == null)
-            {
-                Debug.LogError("[Player] No Camera assigned and no MainCamera found.");
-                enabled = false; // Disable script so that we dont spam errors or run broken logic
-                return;
-            }
-        }
-
-        CalculateScreenBounds();
-    }
-
-
-    void Update()
-    {
-        HandleMovement();
-    }
-
-    private void CalculateScreenBounds()
-    {
-        Vector3 leftEdge = cam.ViewportToWorldPoint(new Vector3(0f, 0.5f, 0f));
-        Vector3 rightEdge = cam.ViewportToWorldPoint(new Vector3(1f, 0.5f, 0f));
-        Vector3 topEdge = cam.ViewportToWorldPoint(new Vector3(0.5f, 1f, 0f));
-        Vector3 bottomEdge = cam.ViewportToWorldPoint(new Vector3(0.5f, 0f, 0f));
-
-        minX = leftEdge.x + horizontalPadding;
-        maxX = rightEdge.x - horizontalPadding;
-        minY = bottomEdge.y + verticalPadding;
-        maxY = topEdge.y - verticalPadding;
-
-        // Cleaner Log Messages - you can use $"Message text goes here {Variable1} and {Variable2)" in Debug.Log
-        Debug.Log($"The screen bounds are minX: {minX}, maxX: {maxX}, minY: {minY} ,maxY: {maxY}");
-    }
-
-    private void HandleMovement()
-    {
-        // Read input axes
-        float moveX = Input.GetAxis("Horizontal");
-        float moveY = Input.GetAxis("Vertical");
-
-        // 2D movement vector
-        Vector3 movement = new Vector3(moveX, moveY, 0f) * moveSpeed * Time.deltaTime;
-
-        // Proposed new position
-        Vector3 newPos = transform.position + movement;
-
-        // Clamp X and Y
-        newPos.x = Mathf.Clamp(newPos.x, minX, maxX);
-        newPos.y = Mathf.Clamp(newPos.y, minY, maxY);
-
-        // Preserve current Z (important even in 2D)
-        newPos.z = transform.position.z;
-
-        // Apply
-        transform.position = newPos;
-    }
-
-}
-
-        </code></pre>
-</details>
-
-        <blockquote>
-          <!-- NOTES ABOUT THIS CODE BLOCK -->
-          If clamping doesn’t work, check that the camera is tagged “MainCamera” and that you calculated min/max using <code>ViewportToWorldPoint</code> with the correct coordinates.
-        </blockquote>
-      </article>
-  
-
-      <!-- CODE BLOCK 3 -->
-      <article class="code-example" id="code-block-3">
-        <div class="code-header">
-          <div class="code-title">Code Block 3 – <!-- Short description here -->Preliminary Laser Firing</div>
-          <div class="code-ref">Appendix #03</div>
-        </div>
-        <details>
-<summary>💡 Hints (click to expand)</summary>
-<code>Player.cs</code>
-        <pre class="language-csharp"><code class="language-csharp">
-using UnityEngine;
-
-public class Player : MonoBehaviour
-{
-    [Header("Movement")] // Use can headers in you variables to make them pretty in the inspector
-    public float moveSpeed = 8f;
-
-    [Header("Screen Bounds")]
-    public Camera cam; //The camera in our scene
-    public float horizontalPadding = 0.55f; // How close can we get to the sides
-    public float verticalPadding = 0.55f; // How close can we get to the sides
-    private float minX, maxX; //Where we store the world edge x values
-    private float minY, maxY; //Where we store the world edge y values
-
-    [Header("Laser Properties")]
-    [SerializeField] GameObject laserPrefab;
-    [SerializeField] float laserSpeed;
-
-    void Start()
-    {
-        // Assign the main camera if not set
-        if (cam == null)
-        {
-            cam = Camera.main;
-
-            if (cam == null)
-            {
-                Debug.LogError("[Player] No Camera assigned and no MainCamera found.");
-                enabled = false; // Disable script so that we dont spam errors or run broken logic
-                return;
-            }
-        }
-
-        CalculateScreenBounds();
-    }
-
-
-    void Update()
-    {
-        HandleMovement();
-        HandleFiring();
-    }
-
-    private void CalculateScreenBounds()
-    {
-        Vector3 leftEdge = cam.ViewportToWorldPoint(new Vector3(0f, 0.5f, 0f));
-        Vector3 rightEdge = cam.ViewportToWorldPoint(new Vector3(1f, 0.5f, 0f));
-        Vector3 topEdge = cam.ViewportToWorldPoint(new Vector3(0.5f, 1f, 0f));
-        Vector3 bottomEdge = cam.ViewportToWorldPoint(new Vector3(0.5f, 0f, 0f));
-
-        minX = leftEdge.x + horizontalPadding;
-        maxX = rightEdge.x - horizontalPadding;
-        minY = bottomEdge.y + verticalPadding;
-        maxY = topEdge.y - verticalPadding;
-
-        // Cleaner Log Messages - you can use $"Message text goes here {Variable1} and {Variable2)" in Debug.Log
-        Debug.Log($"The screen bounds are minX: {minX}, maxX: {maxX}, minY: {minY} ,maxY: {maxY}");
-    }
-
-    private void HandleMovement()
-    {
-        // Read input axes
-        float moveX = Input.GetAxis("Horizontal");
-        float moveY = Input.GetAxis("Vertical");
-
-        // 2D movement vector
-        Vector3 movement = new Vector3(moveX, moveY, 0f) * moveSpeed * Time.deltaTime;
-
-        // Proposed new position
-        Vector3 newPos = transform.position + movement;
-
-        // Clamp X and Y
-        newPos.x = Mathf.Clamp(newPos.x, minX, maxX);
-        newPos.y = Mathf.Clamp(newPos.y, minY, maxY);
-
-        // Preserve current Z (important even in 2D)
-        newPos.z = transform.position.z;
-
-        // Apply
-        transform.position = newPos;
-    }
-
-    private void HandleFiring()
-    {
-        // Fire one laser when "Fire1" is pressed (mouse or controller)
-        if (Input.GetButtonDown("Fire1"))
-        {
-            if (laserPrefab == null)
-            {
-                Debug.LogWarning("Player: No laserPrefab assigned.");
-                return;
-            }
-
-            // Spawn the laser at the player's position
-            GameObject laserInstance = Instantiate(laserPrefab, transform.position, Quaternion.identity);
-
-            // Apply velocity if it has a Rigidbody2D
-            Rigidbody2D rb = laserInstance.GetComponent<Rigidbody2D>();
-            if (rb != null)
-            {
-                rb.velocity = new Vector2(0f, laserSpeed);
-            }
-        }
-
-    }
-
-}
-
-
-
-        </code></pre>
-          <code>LaserProjectile.cs</code>
-        <pre class="language-csharp"><code class="language-csharp">
-using UnityEngine;
-
-public class LaserProjectile : MonoBehaviour
-{
-    // When this object is no longer visible by any camera,
-    // Unity calls this automatically.
-    private void OnBecameInvisible()
-    {
-        // Clean up the projectile so it doesn't live forever off-screen
-        Destroy(gameObject);
-    }
-}
-
-          
-        </code></pre>
-</details>
-
-        <blockquote>
-          <!-- NOTES ABOUT THIS CODE BLOCK -->
-          If your laser doesn’t move or even appear, double-check that the prefab has a <code>Rigidbody2D</code> with zero gravity and that you assigned the prefab reference in the Inspector.
-        </blockquote>
-      </article>
-
-      <!-- CODE BLOCK 4 -->
-      <article class="code-example" id="code-block-4">
-        <div class="code-header">
-          <div class="code-title">Code Block 4 – <!-- Short description here -->Continuous Firing With a Coroutine</div>
-          <div class="code-ref">Appendix #04</div>
-        </div>
-        <details>
-<summary>💡 Hints (click to expand)</summary>
-<code>Player.cs</code>
-        <pre class="language-csharp"><code class="language-csharp">
-using UnityEngine;
-using System.Collections;  // Needed for IEnumerator and coroutines
-
-public class Player : MonoBehaviour
-{
-    [Header("Movement")] // Use headers to make variables pretty in the inspector
-    public float moveSpeed = 8f;
-
-    [Header("Screen Bounds")]
-    public Camera cam; //The camera in our scene
-    public float horizontalPadding = 0.55f; // How close can we get to the sides
-    public float verticalPadding = 0.55f; // How close can we get to the sides
-    private float minX, maxX; //Where we store the world edge x values
-    private float minY, maxY; //Where we store the world edge y values
-
-    [Header("Laser Properties")]
-    [SerializeField] GameObject laserPrefab; //Laser To Spawn
-    [SerializeField] float laserSpeed; // How fast the laser travels
-    [SerializeField] float firingInterval = 0.2f; // Delay between shots while firing
-
-    // Reference to the running coroutine (if any)
-    private Coroutine firingCoroutine;
-
-
-    void Start()
-    {
-        // Assign the main camera if not set
-        if (cam == null)
-        {
-            cam = Camera.main;
-
-            if (cam == null)
-            {
-                Debug.LogError("[Player] No Camera assigned and no MainCamera found.");
-                enabled = false; // Disable script so that we dont spam errors or run broken logic
-                return;
-            }
-        }
-
-        CalculateScreenBounds();
-    }
-
-
-    void Update()
-    {
-        HandleMovement();
-        HandleFiring();
-    }
-
-    private void CalculateScreenBounds()
-    {
-        Vector3 leftEdge = cam.ViewportToWorldPoint(new Vector3(0f, 0.5f, 0f));
-        Vector3 rightEdge = cam.ViewportToWorldPoint(new Vector3(1f, 0.5f, 0f));
-        Vector3 topEdge = cam.ViewportToWorldPoint(new Vector3(0.5f, 1f, 0f));
-        Vector3 bottomEdge = cam.ViewportToWorldPoint(new Vector3(0.5f, 0f, 0f));
-
-        minX = leftEdge.x + horizontalPadding;
-        maxX = rightEdge.x - horizontalPadding;
-        minY = bottomEdge.y + verticalPadding;
-        maxY = topEdge.y - verticalPadding;
-
-        // Cleaner Log Messages - you can use $"Message text goes here {Variable1} and {Variable2)" in Debug.Log
-        Debug.Log($"The screen bounds are minX: {minX}, maxX: {maxX}, minY: {minY} ,maxY: {maxY}"); 
-    }
-
-    private void HandleMovement()
-    {
-        // Read input axes
-        float moveX = Input.GetAxis("Horizontal");
-        float moveY = Input.GetAxis("Vertical");
-
-        // 2D movement vector
-        Vector3 movement = new Vector3(moveX, moveY, 0f) * moveSpeed * Time.deltaTime;
-
-        // Proposed new position
-        Vector3 newPos = transform.position + movement;
-
-        // Clamp X and Y
-        newPos.x = Mathf.Clamp(newPos.x, minX, maxX);
-        newPos.y = Mathf.Clamp(newPos.y, minY, maxY);
-
-        // Preserve current Z (important even in 2D)
-        newPos.z = transform.position.z;
-
-        // Apply
-        transform.position = newPos;
-    }
-
-    private void HandleFiring()
-    {
-        // Start firing when Fire1 is pressed
-        if (Input.GetButtonDown("Fire1"))
-        {
-            if (firingCoroutine == null)
-            {
-                firingCoroutine = StartCoroutine(FireContinuously());
-            }
-        }
-
-        // Stop firing when Fire1 is released
-        if (Input.GetButtonUp("Fire1"))
-        {
-            if (firingCoroutine != null)
-            {
-                StopCoroutine(firingCoroutine);
-                firingCoroutine = null;
-            }
-        }
-    }
-
-    private IEnumerator FireContinuously()
-    {
-        // Loop forever until stopped from outside
-        while (true)
-        {
-            if (laserPrefab != null)
-            {
-                // Spawn a laser at the player's position
-                GameObject laserInstance = Instantiate(
-                    laserPrefab,
-                    transform.position,
-                    Quaternion.identity
-                );
-
-                // Give the laser upward velocity
-                Rigidbody2D rb = laserInstance.GetComponent<Rigidbody2D>();
-                if (rb != null)
-                {
-                    rb.velocity = new Vector2(0f, laserSpeed);
-                }
-            }
-            else
-            {
-                Debug.LogWarning("Player: No laserPrefab assigned.");
-            }
-
-            // Wait for the firing interval before spawning the next shot
-            yield return new WaitForSeconds(firingInterval);
-        }
-    }
-
-}
-
-
-          </code></pre>
-</details>
-          <blockquote>
-          <!-- NOTES ABOUT THIS CODE BLOCK -->
-          If the firing speed seems wrong or never stops, make sure you're only starting the coroutine once and stopping it correctly when the button is released.
-        </blockquote>
-      </article>
-
-      <!-- CODE BLOCK 5 -->
-      <article class="code-example" id="code-block-5">
-        <div class="code-header">
-          <div class="code-title">Code Block 5 – <!-- Short description here -->Enemy Waypoints Setup & Debug</div>
-          <div class="code-ref">Appendix #05</div>
-        </div>
-        <details>
-<summary>💡 Hints (click to expand)</summary>
-<code>EnemyPathing.cs</code>
-        <pre class="language-csharp"><code class="language-csharp">
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class EnemyPathfinding : MonoBehaviour
-{
-    [Header("Pathfinding")]
-    [SerializeField] Transform pathRoot;
-    public List<Transform> waypoints;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        InitializePathfinding();
-        transform.position = waypoints[0].position;
-    }
-
-    private void Update()
-    {
-        
-    }
-
-    private void InitializePathfinding()
-    {
-        // Safety check – make sure a path has been assigned
-        if (pathRoot == null)
-        {
-            Debug.LogWarning("EnemyPathing: No pathRoot assigned on " + gameObject.name);
-            return;
-        }
-
-        // Populate the waypoints list from all children of pathRoot
-        foreach (Transform child in pathRoot)
-        {
-            // Each child under pathRoot is treated as one waypoint
-            waypoints.Add(child);
-        }
-
-        // Log each waypoint so we can check the order in the Console
-        for (int i = 0; i < waypoints.Count; i++)
-        {
-            Transform wp = waypoints[i];
-            Debug.Log(
-                $"Waypoint {i} -> {wp.name} at position {wp.position}",
-                this
-            );
-        }
-    }
-
-    // Visualize the waypoints to sanity check they are in the right place - we can essentially copy the for loop here, but use it inside OnDrawGizmos
-    private void OnDrawGizmos()
-    {
-        if (waypoints == null) return;
-
-        for (int i = 0; i < waypoints.Count; i++)
-        {
-            Transform wp = waypoints[i];
-            if (wp == null) continue;
-
-            // Give each gizmo a consistent colour based on index
-            Gizmos.color = Color.HSVToRGB((i / (float)waypoints.Count), 1f, 1f);
-
-            // Draw the waypoint position
-            Gizmos.DrawWireSphere(wp.position, 0.2f);
-        }
-    }
-}
-
-
-        </code></pre>
-</details>
-
-          <blockquote>
-          <!-- NOTES ABOUT THIS CODE BLOCK -->
-          If no waypoints print to the Console, confirm that the <code>pathRoot</code> object is assigned and that the waypoint transforms are children of it in the correct order.
-        </blockquote>
-      </article>
-
-      <!-- CODE BLOCK 6 -->
-      <article class="code-example" id="code-block-6">
-        <div class="code-header">
-          <div class="code-title">Code Block 6 – <!-- Short description here -->Moving the Enemy With MoveTowards</div>
-          <div class="code-ref">Appendix #06</div>
-        </div>
-        <details>
-<summary>💡 Hints (click to expand)</summary>
-<code>EnemyPathing.cs</code>
-        <pre class="language-csharp"><code class="language-csharp">
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class EnemyPathfinding : MonoBehaviour
-{
-    [Header("Pathfinding")]
-    [SerializeField] Transform pathRoot;
-    public List<Transform> waypoints;
-
-    [Header("Enemy Movement")]
-// Movement speed along the path
-    public float moveSpeed = 3f;
-
-    // Index of the current waypoint we are moving towards
-    private int currentIndex = 0;
-
-    // How close is "close enough" to consider a waypoint reached
-    public float arriveThreshold = 0.1f;
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        InitializePathfinding();
-        transform.position = waypoints[0].position;
-    }
-
-    private void Update()
-    {
-        // Only move if we have waypoints to follow
-        if (waypoints.Count == 0) return;
-
-        FollowPath();
-    }
-
-    
-
-    private void InitializePathfinding()
-    {
-        // Safety check – make sure a path has been assigned
-        if (pathRoot == null)
-        {
-            Debug.LogWarning("EnemyPathing: No pathRoot assigned on " + gameObject.name);
-            return;
-        }
-
-        // Populate the waypoints list from all children of pathRoot
-        foreach (Transform child in pathRoot)
-        {
-            // Each child under pathRoot is treated as one waypoint
-            waypoints.Add(child);
-        }
-
-        // Log each waypoint so we can check the order in the Console
-        for (int i = 0; i < waypoints.Count; i++)
-        {
-            Transform wp = waypoints[i];
-            Debug.Log(
-                $"Waypoint {i} -> {wp.name} at position {wp.position}",
-                this
-            );
-        }
-    }
-
-    // Visualize the waypoints to sanity check they are in the right place - we can essentially copy the for loop here, but use it inside OnDrawGizmos
-    private void OnDrawGizmos()
-    {
-        if (waypoints == null) return;
-
-        for (int i = 0; i < waypoints.Count; i++)
-        {
-            Transform wp = waypoints[i];
-            if (wp == null) continue;
-
-            // Give each gizmo a consistent colour based on index
-            Gizmos.color = Color.HSVToRGB((i / (float)waypoints.Count), 1f, 1f);
-
-            // Draw the waypoint position
-            Gizmos.DrawWireSphere(wp.position, 0.2f);
-        }
-    }
-
-    private void FollowPath()
-    {
-        // If we've already passed the last waypoint, destroy the enemy
-        if (currentIndex >= waypoints.Count)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        // Get the current target waypoint
-        Transform targetWaypoint = waypoints[currentIndex];
-
-        // Move towards the target waypoint at a steady speed
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            targetWaypoint.position,
-            moveSpeed * Time.deltaTime
-        );
-
-        // Check how far we are from the target
-        float distanceToTarget = Vector3.Distance(transform.position, targetWaypoint.position);
-
-        // If close enough, move on to the next waypoint
-        if (distanceToTarget < arriveThreshold)
-        {
-            currentIndex++;
-
-            // If that was the last waypoint, the object will be cleaned up next frame
-        }
-    }
-}
-
-
-        </code></pre>
-</details>
-          <blockquote>
-          <!-- NOTES ABOUT THIS CODE BLOCK -->
-          If the enemy jumps or stops early, check that its starting position is set to the first waypoint and that the distance threshold allows it to reliably “arrive” before advancing.
+          This script works with the movement system in the provided Unity package, but you will need to adapt it to work with a different movement script.
         </blockquote>
       </article>
           
@@ -806,11 +216,11 @@ public class EnemyPathfinding : MonoBehaviour
       <h2>Downloads</h2>
       <div class="resource-links">
         <!-- Update links/paths as appropriate -->
-        <a class="resource-pill" href="https://github.com/robblofield/GDD422---Prototypes-and-Programming-Principles/tree/main/labs">
+        <a class="resource-pill" href="https://github.com/robblofield/Juice-Boost/tree/main/Lab%20Notes">
           🧪 Lab Files
         </a>
-        <a class="resource-pill" href="https://github.com/robblofield/Unity-Project-Startup-Files">
-          📦 Unity Project Startup Files
+        <a class="resource-pill" href="https://github.com/robblofield/Juice-Boost/blob/main/Teaching_CorePlayer_3D.unitypackage">
+          📦 Download `Teaching_CorePlayer_3D` Unity Package 
         </a>
       </div>
     </section>
